@@ -18,6 +18,8 @@
   <!-- CSS profesional -->
   <link rel="stylesheet" href="/static/style.css">
 
+  <link rel="manifest" href="/static/manifest.json">
+
   <style>
     /* Modal de cédula */
     #modalCedula {
@@ -91,17 +93,31 @@ let intervalo;
 
 AOS.init();
 
-// Animación título
 var typed = new Typed('#titulo-animado', {
   strings: ['Patrullaje Controlado'],
   typeSpeed: 50,
   showCursor: false
 });
 
+window.onload = function() {
+  if (localStorage.getItem('cedula')) {
+    cedulaUsuario = localStorage.getItem('cedula');
+    document.getElementById('modalCedula').style.display = 'none';
+    document.getElementById('contenidoApp').style.display = 'block';
+  }
+
+  if (localStorage.getItem('patrullajeActivo') === 'true') {
+    iniciarIntervaloPatrullaje();
+    document.getElementById('mensajeUbicacion').style.display = 'none';
+    document.getElementById('acciones').style.display = 'block';
+  }
+};
+
 function confirmarCedula() {
   const input = document.getElementById('inputCedula').value.trim();
   if (input.length === 10 && /^\d+$/.test(input)) {
     cedulaUsuario = input;
+    localStorage.setItem('cedula', cedulaUsuario);
     document.getElementById('modalCedula').style.display = 'none';
     document.getElementById('contenidoApp').style.display = 'block';
   } else {
@@ -115,7 +131,7 @@ function solicitarUbicacion() {
     document.getElementById('acciones').style.display = 'block';
   }, err => {
     alert('Debe autorizar el acceso a ubicación para continuar.');
-    solicitarUbicacion(); // Insistir hasta que acepte
+    solicitarUbicacion();
   });
 }
 
@@ -130,17 +146,22 @@ function iniciarPatrullaje() {
   navigator.geolocation.getCurrentPosition(pos => {
     registrarPosicion("Patrullaje", pos);
     alert('Inicio de actividades. Una excelente jornada.');
-
-    intervalo = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(pos => {
-        registrarPosicion("Patrullaje", pos);
-      });
-    }, 5 * 60 * 1000);
+    localStorage.setItem('patrullajeActivo', 'true');
+    iniciarIntervaloPatrullaje();
   });
+}
+
+function iniciarIntervaloPatrullaje() {
+  intervalo = setInterval(() => {
+    navigator.geolocation.getCurrentPosition(pos => {
+      registrarPosicion("Patrullaje", pos);
+    });
+  }, 5 * 60 * 1000);
 }
 
 function finalizarPatrullaje() {
   clearInterval(intervalo);
+  localStorage.removeItem('patrullajeActivo');
   alert('Patrullaje finalizado. Muchas gracias.');
 }
 
@@ -155,6 +176,17 @@ function registrarPosicion(tipo, pos) {
       fecha_hora: new Date().toISOString().replace('T', ' ').substring(0, 16),
       cedula: cedulaUsuario
     })
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/static/service-worker.js')
+    .then(function(registration) {
+      console.log('Service Worker registrado con éxito:', registration.scope);
+    }, function(err) {
+      console.log('Error al registrar Service Worker:', err);
+    });
   });
 }
 </script>
