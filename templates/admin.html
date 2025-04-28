@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrador de Rutas</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Tom Select -->
+  <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+  <!-- noUiSlider + wNumb -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.1/nouislider.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.1/nouislider.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wnumb/1.2.0/wNumb.min.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: #f0f6ff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #003366;
+    }
+    #controles {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+      color: #003366;
+    }
+    #map {
+      height: 500px;
+      width: 100%;
+      border-radius: 12px;
+      box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background-color: #0056b3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      margin-top: 15px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #003366;
+    }
+    #sliderHora {
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+<h1>Administrador de Rutas</h1>
+
+<div id="controles">
+  <label><input type="checkbox" id="verRuta" checked onchange="actualizarMapa()"> Ver ruta</label>
+
+  <label for="filtroCedula">Filtrar por cédula:</label>
+  <select id="filtroCedula" multiple placeholder="Seleccionar cédulas..."></select>
+
+  <label for="filtroFecha">Filtrar por fecha:</label>
+  <select id="filtroFecha" onchange="actualizarMapa()">
+    <option value="">Todas</option>
+  </select>
+
+  <label>Filtrar por rango de hora:</label>
+  <div id="sliderHora"></div>
+  <div><span id="horaInicioLabel">00:00</span> → <span id="horaFinLabel">23:59</span></div>
+</div>
+
+<div id="map"></div>
+
+<div style="text-align:center">
+  <button onclick="descargar()">Descargar archivo CSV</button>
+</div>
+
+<script>
+let mapa, puntosData = [], lineas = [], marcadores = [], colores = {}, rangoHoras, tomSelectCedula;
+
+function colorPorCedula(cedula) {
+  if (!colores[cedula]) {
+    colores[cedula] = '#' + Math.floor(Math.random()*16777215).toString(16);
+  }
+  return colores[cedula];
+}
+
+function limpiarMapa() {
+  marcadores.forEach(m => mapa.removeLayer(m));
+  lineas.forEach(l => mapa.removeLayer(l));
+  marcadores = [];
+  lineas = [];
+}
+
+function actualizarMapa() {
+  limpiarMapa();
+
+  const filtroCedulas = tomSelectCedula.getValue();
+  const filtroFecha = document.getElementById('filtroFecha').value;
+  const rango = rangoHoras.noUiSlider.get();
+  const horaInicioMins = parseInt(rango[0]);
+  const horaFinMins = parseInt(rango[1]);
+  const verRuta = document.getElementById('verRuta').checked;
+
+  let datosFiltrados = puntosData.filter(p => {
+    if (filtroCedulas.length > 0 && !filtroCedulas.includes("Todos") && !filtroCedulas.includes(p.cedula)) return false;
+    if (filtroFecha && !p.fecha_hora.startsWith(filtroFecha)) return false;
+
+    const partesHora = p.fecha_hora.split(' ')[1].split(':');
+    const horaMin = parseInt(partesHora[0]) * 60 + parseInt(partesHora[1]);
+
+    if (horaMin < horaInicioMins || horaMin > horaFinMins) return false;
+
+    return true;
+  });
+
+  const puntosPorCedula = {};
+
+  datosFiltrados.forEach(p => {
+    if (!puntosPorCedula[p.cedula]) puntosPorCedula[p.cedula] = [];
+    puntosPorCedula[p.cedula].push(p);
+  });
+
+  for (const cedula in puntosPorCedula) {
+    const puntos = puntosPorCedula[cedula];
+    const coords = [];
+
+    puntos.forEach(p => {
+      let icono;
+      if (p.tipo === "Escuela Segura") {
+        icono = L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/1022/1022331.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
+      } else {
+        icono = L.icon({ iconUrl: 'https://png.pngtree.com/png-vector/20220608/ourmid/pngtree-police-car-icon-patrol-cop-png-image_4906436.png', iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40] });
+      }
+
+      const marker = L.marker([p.latitud, p.longitud], { icon: icono })
+        .addTo(mapa)
+        .bindPopup(`<b>${p.tipo}</b><br>Cédula: ${p.cedula}<br>${p.fecha_hora}`);
+
+      marcadores.push(marker);
+      coords.push([p.latitud, p.longitud]);
+    });
+
+    if (coords.length > 1 && verRuta) {
+      const linea = L.polyline(coords, { color: colorPorCedula(cedula) }).addTo(mapa);
+      lineas.push(linea);
+    }
+  }
+
+  if (marcadores.length > 0) {
+    const grupo = L.featureGroup(marcadores);
+    mapa.fitBounds(grupo.getBounds());
+  }
+}
+
+function descargar() {
+  window.location.href = '/descargar';
+}
+
+function minutosAHora(mins) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+}
+
+window.onload = function() {
+  mapa = L.map('map').setView([0, 0], 2);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(mapa);
+
+  fetch('/rutas')
+    .then(response => response.json())
+    .then(data => {
+      puntosData = data;
+
+      const cedulas = [...new Set(data.map(p => p.cedula))];
+      const fechas = [...new Set(data.map(p => p.fecha_hora.split(' ')[0]))];
+
+      const selectCedula = document.getElementById('filtroCedula');
+      selectCedula.innerHTML = '';
+
+      cedulas.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c;
+        option.text = c;
+        selectCedula.appendChild(option);
+      });
+
+      tomSelectCedula = new TomSelect('#filtroCedula', {
+        plugins: ['remove_button'],
+        placeholder: "Seleccionar cédula(s)",
+        closeAfterSelect: false,
+        hideSelected: true,
+        onChange: actualizarMapa
+      });
+
+      const selectFecha = document.getElementById('filtroFecha');
+      fechas.forEach(f => {
+        const option = document.createElement('option');
+        option.value = f;
+        option.text = f;
+        selectFecha.appendChild(option);
+      });
+
+      actualizarMapa();
+    });
+
+  rangoHoras = document.getElementById('sliderHora');
+  noUiSlider.create(rangoHoras, {
+    start: [0, 1439],
+    connect: true,
+    range: { 'min': 0, 'max': 1439 },
+    step: 15,
+    tooltips: [wNumb({decimals:0, edit: minutosAHora}), wNumb({decimals:0, edit: minutosAHora})],
+    format: wNumb({decimals:0})
+  });
+
+  rangoHoras.noUiSlider.on('update', function(values, handle) {
+    document.getElementById('horaInicioLabel').innerText = minutosAHora(parseInt(values[0]));
+    document.getElementById('horaFinLabel').innerText = minutosAHora(parseInt(values[1]));
+    actualizarMapa();
+  });
+};
+</script>
+
+</body>
+</html>

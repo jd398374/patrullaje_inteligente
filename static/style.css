@@ -1,0 +1,74 @@
+/* FUENTES */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600&family=Roboto:wght@400&display=swap');
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background: #e0f7fa;
+  margin: 0;
+  padding: 0;
+  color: #111111;
+}
+
+h1, h2, h3 {
+  font-family: 'Poppins', sans-serif;
+  color: #0077ff;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 20px;
+}
+
+button {
+  background-color: #0077ff;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  font-family: 'Poppins', sans-serif;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+button:hover {
+  background-color: #005bb5;
+  transform: translateY(-5px);
+  box-shadow: 0px 5px 15px rgba(0, 119, 255, 0.4);
+}
+
+.card {
+  background: white;
+  border-radius: 15px;
+  padding: 20px;
+  margin: 15px 0;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+canvas {
+  background: white;
+  border-radius: 15px;
+  padding: 10px;
+  box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+  margin-top: 40px;
+  text-align: center;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Estilos para los textos animados */
+#titulo-animado {
+  font-size: 40px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}

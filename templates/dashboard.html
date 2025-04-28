@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Patrullaje</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js Datalabels -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
+  <!-- AOS Animations -->
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+
+  <!-- jsPDF para exportar PDF correctamente -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <link rel="stylesheet" href="/static/style.css">
+
+  <style>
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    canvas {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+      box-shadow: 0px 2px 10px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="container" id="contenidoDashboard" data-aos="fade-up">
+  <h1 id="titulo-animado" style="text-align:center;">Patrullaje Controlado</h1>
+  <h3 style="text-align:center; margin-bottom:40px;">Tecnología que protege. Seguridad que inspira. - JD</h3>
+
+  <div class="card" data-aos="fade-right">
+    <h2>Resumen General</h2>
+    <h3>Total de Rutas Registradas: <span id="totalRutas">0</span></h3>
+  </div>
+
+  <div class="cards-container" data-aos="fade-up">
+    <div class="card" style="flex: 2;">
+      <h3>Top 5 Cédulas Más Activas</h3>
+      <canvas id="topCedulasChart"></canvas>
+      <button onclick="descargarGrafico('topCedulasChart', 'top_cedulas')">Descargar gráfico de cédulas</button>
+    </div>
+
+    <div class="card" style="flex: 2;">
+      <h3>Horarios Más Activos</h3>
+      <canvas id="horasActivasChart"></canvas>
+      <button onclick="descargarGrafico('horasActivasChart', 'horas_activas')">Descargar gráfico de horarios</button>
+    </div>
+
+    <div class="card" style="flex: 2;">
+      <h3>Tendencia Semanal de Actividad</h3>
+      <canvas id="diasSemanaChart"></canvas>
+      <button onclick="descargarGrafico('diasSemanaChart', 'dias_semana')">Descargar gráfico de días</button>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-top: 20px;">
+    <button onclick="descargarDashboardPDF()">Descargar Dashboard en PDF</button>
+  </div>
+</div>
+
+<footer>
+  &copy; 2025 Patrullaje Controlado - Todos los derechos reservados
+</footer>
+
+<script>
+let chartCedulas, chartHoras, chartDias;
+
+const diasEnEspanol = {
+  "Monday": "Lunes",
+  "Tuesday": "Martes",
+  "Wednesday": "Miércoles",
+  "Thursday": "Jueves",
+  "Friday": "Viernes",
+  "Saturday": "Sábado",
+  "Sunday": "Domingo"
+};
+
+async function cargarDashboard() {
+  const response = await fetch('/dashboard-data');
+  const data = await response.json();
+
+  document.getElementById('totalRutas').innerText = data.total_rutas;
+
+  Chart.register(ChartDataLabels);
+
+  const ctx1 = document.getElementById('topCedulasChart').getContext('2d');
+  chartCedulas = new Chart(ctx1, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(data.top_cedulas),
+      datasets: [{
+        label: 'Cantidad de registros',
+        data: Object.values(data.top_cedulas),
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1,
+        barThickness: 40
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } },
+      plugins: { datalabels: { color: '#000', anchor: 'end', align: 'top', font: { weight: 'bold' } } }
+    }
+  });
+
+  const ctx2 = document.getElementById('horasActivasChart').getContext('2d');
+  chartHoras = new Chart(ctx2, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(data.horas_activas),
+      datasets: [{
+        label: 'Actividades por hora',
+        data: Object.values(data.horas_activas),
+        backgroundColor: 'rgba(255, 99, 132, 0.7)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        borderWidth: 1,
+        barThickness: 30
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } },
+      plugins: { datalabels: { color: '#000', anchor: 'end', align: 'top', font: { weight: 'bold' } } }
+    }
+  });
+
+  const ctx3 = document.getElementById('diasSemanaChart').getContext('2d');
+  const diasOrden = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  chartDias = new Chart(ctx3, {
+    type: 'line',
+    data: {
+      labels: diasOrden.map(d => diasEnEspanol[d]),
+      datasets: [{
+        label: 'Actividades por día',
+        data: diasOrden.map(d => data.frecuencia_dias[d]),
+        backgroundColor: 'rgba(0, 119, 255, 0.5)',
+        borderColor: 'rgba(0, 119, 255, 1)',
+        fill: true,
+        tension: 0.3,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        pointBackgroundColor: 'white',
+        pointBorderColor: 'rgba(0, 119, 255, 1)',
+        pointBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+function descargarGrafico(canvasId, nombreArchivo) {
+  const canvas = document.getElementById(canvasId);
+  const url = canvas.toDataURL("image/png");
+  const link = document.createElement('a');
+  link.download = nombreArchivo + '.png';
+  link.href = url;
+  link.click();
+}
+
+async function descargarDashboardPDF() {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const margin = 10;
+  const availableWidth = pageWidth - margin * 2;
+  let y = 30;
+
+  pdf.setFontSize(18);
+  pdf.text('Reporte de Patrullaje', pageWidth / 2, 15, { align: 'center' });
+  pdf.setFontSize(12);
+  pdf.text('Autor: Cptn. Juan Diego Enríquez N.', pageWidth / 2, 22, { align: 'center' });
+
+  const canvases = [
+    { id: 'topCedulasChart', titulo: 'Top 5 Cédulas Más Activas' },
+    { id: 'horasActivasChart', titulo: 'Horarios Más Activos' },
+    { id: 'diasSemanaChart', titulo: 'Tendencia Semanal de Actividad' }
+  ];
+
+  for (const item of canvases) {
+    const canvas = document.getElementById(item.id);
+    const imgData = canvas.toDataURL('image/png', 1.0);
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgHeight = (availableWidth * imgProps.height) / imgProps.width;
+
+    if (y + imgHeight + 20 > pdf.internal.pageSize.getHeight()) {
+      pdf.addPage();
+      y = 20;
+    }
+
+    pdf.setFontSize(14);
+    pdf.text(item.titulo, pageWidth / 2, y, { align: 'center' });
+    y += 6;
+    pdf.addImage(imgData, 'PNG', margin, y, availableWidth, imgHeight);
+    y += imgHeight + 10;
+  }
+
+  pdf.save('reporte_patrullaje.pdf');
+}
+
+AOS.init();
+window.onload = cargarDashboard;
+</script>
+
+</body>
+</html>
