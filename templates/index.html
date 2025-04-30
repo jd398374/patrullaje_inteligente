@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,29 +10,24 @@
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 
-  <!-- Typed.js (escritura animada) -->
+  <!-- Typed.js -->
   <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
 
   <!-- SimpleParallax.js -->
   <script src="https://cdn.jsdelivr.net/npm/simple-parallax-js@5.6.2/dist/simpleParallax.min.js"></script>
 
-  <!-- CSS profesional -->
-  <link rel="stylesheet" href="/static/style.css">
+  <!-- IndexedDB Helper -->
+  <script src="https://cdn.jsdelivr.net/npm/idb@7/build/iife/index-min.js"></script>
 
+  <link rel="stylesheet" href="/static/style.css">
   <link rel="manifest" href="/static/manifest.json">
 
   <style>
-    /* Modal de cédula */
     #modalCedula {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       z-index: 9999;
     }
     .modal-content {
@@ -40,8 +36,7 @@
       border-radius: 15px;
       text-align: center;
       box-shadow: 0px 5px 20px rgba(0,0,0,0.3);
-      width: 90%;
-      max-width: 400px;
+      width: 90%; max-width: 400px;
     }
     .modal-content input {
       width: 100%;
@@ -53,10 +48,8 @@
     }
   </style>
 </head>
-
 <body>
 
-<!-- Modal de Cédula -->
 <div id="modalCedula">
   <div class="modal-content" data-aos="zoom-in">
     <h2>Bienvenido</h2>
@@ -90,14 +83,8 @@
 <script>
 let cedulaUsuario = "";
 let intervalo;
-
 AOS.init();
-
-var typed = new Typed('#titulo-animado', {
-  strings: ['Patrullaje Controlado'],
-  typeSpeed: 50,
-  showCursor: false
-});
+new Typed('#titulo-animado', { strings: ['Patrullaje Controlado'], typeSpeed: 50, showCursor: false });
 
 window.onload = function() {
   if (localStorage.getItem('cedula')) {
@@ -165,31 +152,69 @@ function finalizarPatrullaje() {
   alert('Patrullaje finalizado. Muchas gracias.');
 }
 
-function registrarPosicion(tipo, pos) {
-  fetch('/guardar', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      tipo: tipo,
-      latitud: pos.coords.latitude,
-      longitud: pos.coords.longitude,
-      fecha_hora: new Date().toISOString().replace('T', ' ').substring(0, 16),
-      cedula: cedulaUsuario
-    })
-  });
+const dbPromise = idb.openDB('patrullajeDB', 1, {
+  upgrade(db) {
+    if (!db.objectStoreNames.contains('ubicaciones')) {
+      db.createObjectStore('ubicaciones', { autoIncrement: true });
+    }
+  }
+});
+
+async function guardarEnIndexedDB(data) {
+  const db = await dbPromise;
+  await db.add('ubicaciones', data);
+  console.log('Guardado offline');
 }
+
+async function sincronizarUbicacionesPendientes() {
+  const db = await dbPromise;
+  const todas = await db.getAll('ubicaciones');
+  for (const datos of todas) {
+    try {
+      const resp = await fetch('/guardar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(datos)
+      });
+      if (resp.ok) {
+        await db.delete('ubicaciones', datos.id);
+        console.log('Sincronizado con éxito');
+      }
+    } catch (err) {
+      console.log('Fallo sincronización');
+      break;
+    }
+  }
+}
+
+function registrarPosicion(tipo, pos) {
+  const datos = {
+    tipo: tipo,
+    latitud: pos.coords.latitude,
+    longitud: pos.coords.longitude,
+    fecha_hora: new Date().toISOString().replace('T', ' ').substring(0, 16),
+    cedula: cedulaUsuario
+  };
+  if (navigator.onLine) {
+    fetch('/guardar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(datos)
+    }).catch(() => guardarEnIndexedDB(datos));
+  } else {
+    guardarEnIndexedDB(datos);
+  }
+}
+
+window.addEventListener('online', sincronizarUbicacionesPendientes);
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('/static/service-worker.js')
-    .then(function(registration) {
-      console.log('Service Worker registrado con éxito:', registration.scope);
-    }, function(err) {
-      console.log('Error al registrar Service Worker:', err);
-    });
+    .then(reg => console.log('Service Worker registrado:', reg.scope))
+    .catch(err => console.log('SW error:', err));
   });
 }
 </script>
-
 </body>
 </html>
