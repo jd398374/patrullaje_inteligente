@@ -5,77 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Administrador de Rutas</title>
 
-  <!-- Leaflet -->
+  <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-
-  <!-- Leaflet Providers -->
-  <script src="https://unpkg.com/leaflet-providers@1.13.0/leaflet-providers.min.js"></script>
 
   <!-- Tom Select -->
   <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet" />
-  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
-  <!-- noUiSlider + wNumb -->
+  <!-- noUiSlider -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.1/nouislider.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.1/nouislider.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/wnumb/1.2.0/wNumb.min.js"></script>
 
-  <!-- Axios -->
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-
+  <!-- Tu CSS -->
   <link rel="stylesheet" href="/static/style.css" />
 
   <style>
-    body {
-      font-family: 'Poppins', sans-serif;
-      background: #f0f6ff;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #003366;
-    }
+    body { font-family: 'Poppins', sans-serif; background: #f0f6ff; margin: 0; padding: 20px; }
+    h1 { text-align: center; color: #003366; }
     #controles {
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-      margin-bottom: 20px;
+      background: white; padding: 20px; border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px;
     }
-    label {
-      font-weight: bold;
-      display: block;
-      margin-top: 10px;
-      color: #003366;
-    }
-    #map {
-      height: 500px;
-      width: 100%;
-      border-radius: 12px;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
-    }
+    label { font-weight: bold; display: block; margin-top: 10px; color: #003366; }
+    #map { height: 500px; width: 100%; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
     button {
-      background-color: #0056b3;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      margin-top: 15px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 16px;
+      background-color: #0056b3; color: white; border: none; padding: 10px 20px;
+      margin-top: 15px; border-radius: 8px; cursor: pointer; font-size: 16px;
     }
-    button:hover {
-      background-color: #003366;
-    }
-    #sliderHora {
-      margin-top: 10px;
-      margin-bottom: 20px;
-    }
-    .leaflet-control-layers {
-      z-index: 9999;
-    }
+    button:hover { background-color: #003366; }
+    #sliderHora { margin-top: 10px; margin-bottom: 20px; }
   </style>
 </head>
 
@@ -83,7 +39,7 @@
   <h1>MONITOREO DE PATRULLAJE INTELIGENTE "JD"</h1>
 
   <div id="controles">
-    <label><input type="checkbox" id="verRuta" checked onchange="actualizarMapa()" /> Ver ruta</label>
+    <label><input type="checkbox" id="verRuta" checked onchange="actualizarMapa()"> Ver ruta</label>
     <label for="filtroCedula">Filtrar por cédula:</label>
     <select id="filtroCedula" multiple placeholder="Seleccionar cédulas..."></select>
 
@@ -103,10 +59,26 @@
     <button onclick="descargar()">Descargar archivo CSV</button>
   </div>
 
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Leaflet Providers (debe ir después de Leaflet) -->
+  <script src="https://unpkg.com/leaflet-providers@1.13.0/leaflet-providers.min.js"></script>
+
+  <!-- Tom Select -->
+  <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+  <!-- noUiSlider + wNumb -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/noUiSlider/15.6.1/nouislider.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/wnumb/1.2.0/wNumb.min.js"></script>
+
+  <!-- Axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
   <script>
     let mapa, puntosData = [], rutas = [], marcadores = [], colores = {}, rangoHoras, tomSelectCedula;
     let capasBase = {}, capaActiva;
-    const ORS_API_KEY = "5b3ce3597851110001cf62482ac7fb34352746b1baf467aab6bb82b6"; // Reemplaza con tu propia API Key
+    const ORS_API_KEY = "5b3ce3597851110001cf62482ac7fb34352746b1baf467aab6bb82b6";
 
     function colorPorCedula(cedula) {
       if (!colores[cedula]) colores[cedula] = '#' + Math.floor(Math.random() * 16777215).toString(16);
@@ -153,9 +125,7 @@
             iconUrl: p.tipo === "Escuela Segura"
               ? 'https://cdn-icons-png.flaticon.com/512/1022/1022331.png'
               : 'https://png.pngtree.com/png-vector/20220608/ourmid/pngtree-police-car-icon-patrol-cop-png-image_4906436.png',
-            iconSize: [40, 40],
-            iconAnchor: [20, 40],
-            popupAnchor: [0, -40]
+            iconSize: [40, 40], iconAnchor: [20, 40], popupAnchor: [0, -40]
           });
 
           const marker = L.marker([p.latitud, p.longitud], { icon: icono })
