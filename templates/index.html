@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -21,6 +20,14 @@
 
   <link rel="stylesheet" href="/static/style.css">
   <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#007BFF">
+
+  <!-- iOS PWA -->
+  <link rel="apple-touch-icon" href="/static/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Patrullaje">
+  <meta name="description" content="Sistema de Patrullaje Controlado - Seguridad Ciudadana">
 
   <style>
     #modalCedula {
@@ -46,175 +53,199 @@
       border-radius: 8px;
       border: 1px solid #ccc;
     }
+    #iosPrompt {
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      padding: 15px;
+      text-align: center;
+      font-size: 15px;
+      color: #856404;
+      display: none;
+      margin: 10px auto;
+      border-radius: 8px;
+      max-width: 400px;
+    }
   </style>
 </head>
 <body>
 
-<div id="modalCedula">
-  <div class="modal-content" data-aos="zoom-in">
-    <h2>Bienvenido</h2>
-    <p>Ingrese su número de cédula para continuar:</p>
-    <input type="text" id="inputCedula" placeholder="Número de Cédula" maxlength="10">
-    <button onclick="confirmarCedula()">Acceder</button>
+  <div id="modalCedula">
+    <div class="modal-content" data-aos="zoom-in">
+      <h2>Bienvenido</h2>
+      <p>Ingrese su número de cédula para continuar:</p>
+      <input type="text" id="inputCedula" placeholder="Número de Cédula" maxlength="10">
+      <button onclick="confirmarCedula()">Acceder</button>
+    </div>
   </div>
-</div>
-
-<div class="container" id="contenidoApp" style="display:none;" data-aos="fade-up">
-  <h1 id="titulo-animado" style="text-align: center;"></h1>
-  <h3 style="text-align:center; margin-bottom:40px;">Tecnología que protege. Seguridad que inspira. - JD</h3>
-
-  <div id="mensajeUbicacion" class="card" style="text-align:center;">
-    <h3>Debemos solicitar acceso a su ubicación para el funcionamiento del sistema</h3>
-    <button onclick="solicitarUbicacion()">Autorizar ubicación</button>
+  
+  <div id="iosPrompt">
+    Para instalar esta aplicación en iOS: toque el botón <strong>Compartir</strong> y luego seleccione <strong>Agregar a la pantalla de inicio</strong>.
   </div>
-
-  <div class="card" id="acciones" style="display:none; text-align:center;">
-    <h2>Acciones disponibles</h2>
-    <button onclick="escuelaSegura()">Escuela Segura</button>
-    <button onclick="iniciarPatrullaje()">Inicio de Patrullaje</button>
-    <button onclick="finalizarPatrullaje()">Finalizar Patrullaje</button>
+  
+  <div class="container" id="contenidoApp" style="display:none;" data-aos="fade-up">
+    <h1 id="titulo-animado" style="text-align: center;"></h1>
+    <h3 style="text-align:center; margin-bottom:40px;">Tecnología que protege. Seguridad que inspira. - JD</h3>
+  
+    <div id="mensajeUbicacion" class="card" style="text-align:center;">
+      <h3>Debemos solicitar acceso a su ubicación para el funcionamiento del sistema</h3>
+      <button onclick="solicitarUbicacion()">Autorizar ubicación</button>
+    </div>
+  
+    <div class="card" id="acciones" style="display:none; text-align:center;">
+      <h2>Acciones disponibles</h2>
+      <button onclick="escuelaSegura()">Escuela Segura</button>
+      <button onclick="iniciarPatrullaje()">Inicio de Patrullaje</button>
+      <button onclick="finalizarPatrullaje()">Finalizar Patrullaje</button>
+    </div>
   </div>
-</div>
-
-<footer>
-  &copy; 2025 Patrullaje Controlado - Todos los derechos reservados
-</footer>
-
-<script>
-let cedulaUsuario = "";
-let intervalo;
-AOS.init();
-new Typed('#titulo-animado', { strings: ['Patrullaje Controlado'], typeSpeed: 50, showCursor: false });
-
-window.onload = function() {
-  if (localStorage.getItem('cedula')) {
-    cedulaUsuario = localStorage.getItem('cedula');
-    document.getElementById('modalCedula').style.display = 'none';
-    document.getElementById('contenidoApp').style.display = 'block';
-  }
-
-  if (localStorage.getItem('patrullajeActivo') === 'true') {
-    iniciarIntervaloPatrullaje();
-    document.getElementById('mensajeUbicacion').style.display = 'none';
-    document.getElementById('acciones').style.display = 'block';
-  }
-};
-
-function confirmarCedula() {
-  const input = document.getElementById('inputCedula').value.trim();
-  if (input.length === 10 && /^\d+$/.test(input)) {
-    cedulaUsuario = input;
-    localStorage.setItem('cedula', cedulaUsuario);
-    document.getElementById('modalCedula').style.display = 'none';
-    document.getElementById('contenidoApp').style.display = 'block';
-  } else {
-    alert('Por favor ingrese una cédula válida de 10 dígitos.');
-  }
-}
-
-function solicitarUbicacion() {
-  navigator.geolocation.getCurrentPosition(pos => {
-    document.getElementById('mensajeUbicacion').style.display = 'none';
-    document.getElementById('acciones').style.display = 'block';
-  }, err => {
-    alert('Debe autorizar el acceso a ubicación para continuar.');
-    solicitarUbicacion();
-  });
-}
-
-function escuelaSegura() {
-  navigator.geolocation.getCurrentPosition(pos => {
-    registrarPosicion("Escuela Segura", pos);
-    alert('Servicio registrado.');
-  });
-}
-
-function iniciarPatrullaje() {
-  navigator.geolocation.getCurrentPosition(pos => {
-    registrarPosicion("Patrullaje", pos);
-    alert('Inicio de actividades. Una excelente jornada.');
-    localStorage.setItem('patrullajeActivo', 'true');
-    iniciarIntervaloPatrullaje();
-  });
-}
-
-function iniciarIntervaloPatrullaje() {
-  intervalo = setInterval(() => {
-    navigator.geolocation.getCurrentPosition(pos => {
-      registrarPosicion("Patrullaje", pos);
-    });
-  }, 5 * 60 * 1000);
-}
-
-function finalizarPatrullaje() {
-  clearInterval(intervalo);
-  localStorage.removeItem('patrullajeActivo');
-  alert('Patrullaje finalizado. Muchas gracias.');
-}
-
-const dbPromise = idb.openDB('patrullajeDB', 1, {
-  upgrade(db) {
-    if (!db.objectStoreNames.contains('ubicaciones')) {
-      db.createObjectStore('ubicaciones', { autoIncrement: true });
-    }
-  }
-});
-
-async function guardarEnIndexedDB(data) {
-  const db = await dbPromise;
-  await db.add('ubicaciones', data);
-  console.log('Guardado offline');
-}
-
-async function sincronizarUbicacionesPendientes() {
-  const db = await dbPromise;
-  const todas = await db.getAll('ubicaciones');
-  for (const datos of todas) {
-    try {
-      const resp = await fetch('/guardar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datos)
-      });
-      if (resp.ok) {
-        await db.delete('ubicaciones', datos.id);
-        console.log('Sincronizado con éxito');
+  
+  <footer>
+    &copy; 2025 Patrullaje Controlado - Todos los derechos reservados
+  </footer>
+  <script>
+    let cedulaUsuario = "";
+    let intervalo;
+    AOS.init();
+    new Typed('#titulo-animado', { strings: ['Patrullaje Controlado'], typeSpeed: 50, showCursor: false });
+    
+    window.onload = function() {
+      if (localStorage.getItem('cedula')) {
+        cedulaUsuario = localStorage.getItem('cedula');
+        document.getElementById('modalCedula').style.display = 'none';
+        document.getElementById('contenidoApp').style.display = 'block';
       }
-    } catch (err) {
-      console.log('Fallo sincronización');
-      break;
+    
+      if (localStorage.getItem('patrullajeActivo') === 'true') {
+        iniciarIntervaloPatrullaje();
+        document.getElementById('mensajeUbicacion').style.display = 'none';
+        document.getElementById('acciones').style.display = 'block';
+      }
+    
+      // iOS prompt
+      const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+      const isInStandaloneMode = 'standalone' in window.navigator && window.navigator.standalone;
+      if (isIos && !isInStandaloneMode) {
+        document.getElementById('iosPrompt').style.display = 'block';
+      }
+    };
+    
+    function confirmarCedula() {
+      const input = document.getElementById('inputCedula').value.trim();
+      if (input.length === 10 && /^\d+$/.test(input)) {
+        cedulaUsuario = input;
+        localStorage.setItem('cedula', cedulaUsuario);
+        document.getElementById('modalCedula').style.display = 'none';
+        document.getElementById('contenidoApp').style.display = 'block';
+      } else {
+        alert('Por favor ingrese una cédula válida de 10 dígitos.');
+      }
     }
-  }
-}
-
-function registrarPosicion(tipo, pos) {
-  const datos = {
-    tipo: tipo,
-    latitud: pos.coords.latitude,
-    longitud: pos.coords.longitude,
-    fecha_hora: new Date().toISOString().replace('T', ' ').substring(0, 16),
-    cedula: cedulaUsuario
-  };
-  if (navigator.onLine) {
-    fetch('/guardar', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datos)
-    }).catch(() => guardarEnIndexedDB(datos));
-  } else {
-    guardarEnIndexedDB(datos);
-  }
-}
-
-window.addEventListener('online', sincronizarUbicacionesPendientes);
-
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('/static/service-worker.js')
-    .then(reg => console.log('Service Worker registrado:', reg.scope))
-    .catch(err => console.log('SW error:', err));
-  });
-}
-</script>
-</body>
-</html>
+    
+    function solicitarUbicacion() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('mensajeUbicacion').style.display = 'none';
+        document.getElementById('acciones').style.display = 'block';
+      }, err => {
+        alert('Debe autorizar el acceso a ubicación para continuar.');
+        solicitarUbicacion();
+      });
+    }
+    
+    function escuelaSegura() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        registrarPosicion("Escuela Segura", pos);
+        alert('Servicio registrado.');
+      });
+    }
+    
+    function iniciarPatrullaje() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        registrarPosicion("Patrullaje", pos);
+        alert('Inicio de actividades. Una excelente jornada.');
+        localStorage.setItem('patrullajeActivo', 'true');
+        iniciarIntervaloPatrullaje();
+      });
+    }
+    
+    function iniciarIntervaloPatrullaje() {
+      intervalo = setInterval(() => {
+        navigator.geolocation.getCurrentPosition(pos => {
+          registrarPosicion("Patrullaje", pos);
+        });
+      }, 5 * 60 * 1000);
+    }
+    
+    function finalizarPatrullaje() {
+      clearInterval(intervalo);
+      localStorage.removeItem('patrullajeActivo');
+      alert('Patrullaje finalizado. Muchas gracias.');
+    }
+    
+    const dbPromise = idb.openDB('patrullajeDB', 1, {
+      upgrade(db) {
+        if (!db.objectStoreNames.contains('ubicaciones')) {
+          db.createObjectStore('ubicaciones', { autoIncrement: true });
+        }
+      }
+    });
+    
+    async function guardarEnIndexedDB(data) {
+      const db = await dbPromise;
+      await db.add('ubicaciones', data);
+      console.log('Guardado offline');
+    }
+    
+    async function sincronizarUbicacionesPendientes() {
+      const db = await dbPromise;
+      const todas = await db.getAll('ubicaciones');
+      for (const datos of todas) {
+        try {
+          const resp = await fetch('/guardar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(datos)
+          });
+          if (resp.ok) {
+            await db.delete('ubicaciones', datos.id);
+            console.log('Sincronizado con éxito');
+          }
+        } catch (err) {
+          console.log('Fallo sincronización');
+          break;
+        }
+      }
+    }
+    
+    function registrarPosicion(tipo, pos) {
+      const datos = {
+        tipo: tipo,
+        latitud: pos.coords.latitude,
+        longitud: pos.coords.longitude,
+        fecha_hora: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        cedula: cedulaUsuario
+      };
+      if (navigator.onLine) {
+        fetch('/guardar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(datos)
+        }).catch(() => guardarEnIndexedDB(datos));
+      } else {
+        guardarEnIndexedDB(datos);
+      }
+    }
+    
+    window.addEventListener('online', sincronizarUbicacionesPendientes);
+    
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/static/service-worker.js')
+        .then(reg => console.log('Service Worker registrado:', reg.scope))
+        .catch(err => console.log('SW error:', err));
+      });
+    }
+    </script>
+    
+    </body>
+    </html>
+    
