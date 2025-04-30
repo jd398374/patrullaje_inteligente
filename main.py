@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -85,34 +84,38 @@ async def descargar_rutas():
 async def dashboard(request: Request):
     return templates.TemplateResponse("dashboard.html", {"request": request})
 
-# Datos del dashboard
+# ✅ Endpoint corregido: Datos del dashboard
 @app.get("/dashboard-data")
 async def dashboard_data():
-    query = select(rutas)
-    resultados = await database.fetch_all(query)
-    df = pd.DataFrame(resultados, columns=["latitud", "longitud", "fecha_hora", "tipo", "cedula"])
+    try:
+        query = select(rutas)
+        resultados = await database.fetch_all(query)
+        df = pd.DataFrame(resultados)  # ← CORREGIDO: quitado el parámetro 'columns'
 
-    if df.empty:
-        return JSONResponse(content={})
+        if df.empty:
+            return JSONResponse(content={})
 
-    total_rutas = len(df)
-    top_cedulas = df["cedula"].value_counts().head(5).to_dict()
-    df['hora'] = pd.to_datetime(df['fecha_hora']).dt.hour
-    horas_activas = df['hora'].value_counts().sort_index().to_dict()
-    df['dia_semana'] = pd.to_datetime(df['fecha_hora']).dt.day_name()
-    dias = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    frecuencia_dias = {dia: 0 for dia in dias}
-    conteo_dias = df['dia_semana'].value_counts().to_dict()
-    for dia in dias:
-        if dia in conteo_dias:
-            frecuencia_dias[dia] = conteo_dias[dia]
+        total_rutas = len(df)
+        top_cedulas = df["cedula"].value_counts().head(5).to_dict()
+        df['hora'] = pd.to_datetime(df['fecha_hora']).dt.hour
+        horas_activas = df['hora'].value_counts().sort_index().to_dict()
+        df['dia_semana'] = pd.to_datetime(df['fecha_hora']).dt.day_name()
 
-    return JSONResponse(content={
-        "total_rutas": total_rutas,
-        "top_cedulas": top_cedulas,
-        "horas_activas": horas_activas,
-        "frecuencia_dias": frecuencia_dias
-    })
+        dias = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        frecuencia_dias = {dia: 0 for dia in dias}
+        conteo_dias = df['dia_semana'].value_counts().to_dict()
+        for dia in dias:
+            if dia in conteo_dias:
+                frecuencia_dias[dia] = conteo_dias[dia]
+
+        return JSONResponse(content={
+            "total_rutas": total_rutas,
+            "top_cedulas": top_cedulas,
+            "horas_activas": horas_activas,
+            "frecuencia_dias": frecuencia_dias
+        })
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # Descargar resumen del dashboard
 @app.get("/descargar-dashboard")
