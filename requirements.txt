@@ -1,6 +1,9 @@
 fastapi
 uvicorn
+sqlalchemy
+databases
+asyncpg
 jinja2
-pandas
 python-multipart
-
+pandas
+aiofiles
