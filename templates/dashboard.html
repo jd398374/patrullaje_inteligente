@@ -7,14 +7,13 @@
 
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Chart.js Datalabels -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
-  <!-- AOS Animations -->
+  <!-- AOS -->
   <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
   <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 
-  <!-- jsPDF para exportar PDF correctamente -->
+  <!-- jsPDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <link rel="stylesheet" href="/static/style.css">
@@ -91,6 +90,11 @@ const diasEnEspanol = {
 async function cargarDashboard() {
   const response = await fetch('/dashboard-data');
   const data = await response.json();
+
+  if (!data || Object.keys(data).length === 0) {
+    alert("No hay datos suficientes para mostrar el dashboard.");
+    return;
+  }
 
   document.getElementById('totalRutas').innerText = data.total_rutas;
 
