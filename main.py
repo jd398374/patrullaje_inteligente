@@ -68,7 +68,7 @@ async def obtener_rutas():
 async def descargar_rutas():
     query = select(rutas)
     resultados = await database.fetch_all(query)
-    df = pd.DataFrame(resultados)
+    df = pd.DataFrame([dict(r) for r in resultados])
     if df.empty:
         return JSONResponse(content={"error": "No hay datos para exportar."})
 
@@ -90,7 +90,7 @@ async def dashboard_data():
     try:
         query = select(rutas)
         resultados = await database.fetch_all(query)
-        df = pd.DataFrame(resultados)  # ← CORREGIDO: quitado el parámetro 'columns'
+        df = pd.DataFrame([dict(r) for r in resultados])  # ← CORREGIDO: quitado el parámetro 'columns'
 
         if df.empty:
             return JSONResponse(content={})
@@ -122,7 +122,7 @@ async def dashboard_data():
 async def descargar_dashboard():
     query = select(rutas)
     resultados = await database.fetch_all(query)
-    df = pd.DataFrame(resultados)
+    df = pd.DataFrame([dict(r) for r in resultados])
     resumen_df = pd.DataFrame({"total_rutas": [len(df)]})
     output = io.StringIO()
     resumen_df.to_csv(output, index=False)

@@ -94,6 +94,7 @@
     <div class="card" id="acciones" style="display:none; text-align:center;">
       <h2>Acciones disponibles</h2>
       <button onclick="escuelaSegura()">Escuela Segura</button>
+      <button onclick="localSeguro()">Local Seguro</button>
       <button onclick="iniciarPatrullaje()">Inicio de Patrullaje</button>
       <button onclick="finalizarPatrullaje()">Finalizar Patrullaje</button>
     </div>
@@ -157,6 +158,14 @@
         alert('Servicio registrado.');
       });
     }
+
+    function localSeguro() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        registrarPosicion("Local Seguro", pos);
+        alert('Local seguro registrado.');
+      }); 
+    }
+
     
     function iniciarPatrullaje() {
       navigator.geolocation.getCurrentPosition(pos => {
