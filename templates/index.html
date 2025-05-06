@@ -95,6 +95,7 @@
       <h2>Acciones disponibles</h2>
       <button onclick="escuelaSegura()">Escuela Segura</button>
       <button onclick="localSeguro()">Local Seguro</button>
+      <button onclick="atencionCiudadana()">Atención Ciudadana</button>
       <button onclick="iniciarPatrullaje()">Inicio de Patrullaje</button>
       <button onclick="finalizarPatrullaje()">Finalizar Patrullaje</button>
     </div>
@@ -166,6 +167,12 @@
       }); 
     }
 
+    function atencionCiudadana() {
+      navigator.geolocation.getCurrentPosition(pos => {
+        registrarPosicion("Atención Ciudadana", pos);
+        alert('Atención Ciudadana registrada.');
+      });
+    }
     
     function iniciarPatrullaje() {
       navigator.geolocation.getCurrentPosition(pos => {
